@@ -16,12 +16,14 @@ def require(ok, message):
         raise ValueError(message)
 
 
-def features(fl23, audio_mode):
-    require(type(fl23) is bool and audio_mode in ("none", "stock", "custom") and
+def features(fl23, audio_mode, disable_ntsc_warning=False):
+    require(type(disable_ntsc_warning) is bool and
+            type(fl23) is bool and audio_mode in ("none", "stock", "custom") and
             (fl23 or audio_mode != "none"), "feature selection is empty or invalid")
     return (["fl2_fl3"] if fl23 else []) + (
         [] if audio_mode == "none" else ["electronic_shutter_sound"] +
-        (["custom_audio"] if audio_mode == "custom" else []))
+        (["custom_audio"] if audio_mode == "custom" else [])) + (
+        ["no_ntsc_notice_v2"] if disable_ntsc_warning else [])
 
 
 def selected(manifest_path, audio=None):
@@ -32,14 +34,15 @@ def selected(manifest_path, audio=None):
     fl23 = report.get("fl23") if "fl23" in report else \
         "fl2_fl3" in report.get("feature_ids", [])
     mode = report.get("audio_mode")
-    ids = features(fl23, mode)
+    disable = report.get("disable_ntsc_warning", False)
+    ids = features(fl23, mode, disable)
     require(report.get("format") == 2 and report.get("feature_ids") == ids and
             report.get("source_official_sha256") == firmware.SOURCE_SHA and
             report.get("package_version") == "2.00" and
             report.get("full_decrypt_verified") is True and
             report.get("output_size") == sound.PACKAGE_SIZE,
             "selected package manifest differs")
-    if mode == "none":
+    if mode == "none" and not disable:
         output = Path(report.get("output_path", ""))
         require(fl23 and output.name == firmware.OUT_NAME and
                 report.get("output_sha256") == FL23_SHA,
@@ -48,6 +51,8 @@ def selected(manifest_path, audio=None):
         output = manifest_path.with_name(sound.OUTPUT_NAME)
         expected_base = FL23_SHA if fl23 else firmware.SOURCE_SHA
         require(report.get("base_package_sha256") == expected_base and
+                report.get("ntsc_patch_spec_sha256") ==
+                (sound.ntsc.SPEC_SHA if disable else None) and
                 report.get("sound_patch_spec_sha256") == sound.SPEC_SHA and
                 type(report.get("volume_percent")) is int and
                 1 <= report["volume_percent"] <= 100 and
@@ -60,7 +65,7 @@ def selected(manifest_path, audio=None):
                     sound.spec_data()["original_sys_sound_sha256"] and
                     report.get("registration_length_bytes") == 0x4c0,
                     "stock camera sound was changed")
-        else:
+        elif mode == "custom":
             require(all(isinstance(report.get(field), str) and
                         len(report[field]) == 64 for field in
                         ("source_audio_sha256", "encoded_audio_sha256")) and
@@ -71,6 +76,16 @@ def selected(manifest_path, audio=None):
                 require(firmware.sha_file(Path(audio)) ==
                         report["source_audio_sha256"],
                         "selected custom audio changed")
+    if disable:
+        sound.ntsc.spec_data()
+        require(report.get("ntsc", {}).get("spec_sha256") == sound.ntsc.SPEC_SHA and
+                report.get("ntsc", {}).get("windows") == 2,
+                "NTSC patch verification differs")
+    if mode == "none" and disable:
+        require(report.get("source_audio_sha256") is None and
+                report.get("encoded_audio_sha256") is None and
+                report.get("registration_length_bytes") is None and
+                "cp" not in report, "no-sound selection contains sound changes")
     require(not output.is_symlink() and output.is_file() and
             output.stat().st_size == sound.PACKAGE_SIZE and
             firmware.sha_file(output) == report.get("output_sha256"),
@@ -78,18 +93,39 @@ def selected(manifest_path, audio=None):
     return output, report["output_sha256"]
 
 
-def build(official, run_dir, fl23, audio_mode, audio=None, volume_percent=100):
+def check_plan(manifest_path, plan):
+    """Bind a resumed package to the saved selection before update writes."""
+    ids = features(plan["fl23"], plan["audio_mode"],
+                   plan.get("disable_ntsc_warning", False))
+    manifest_path = Path(manifest_path)
+    require(not manifest_path.is_symlink() and manifest_path.is_file(),
+            "saved feature package manifest is missing or linked")
+    report = json.loads(manifest_path.read_text(encoding="utf-8"))
+    require(report.get("feature_ids") == ids and
+            report.get("audio_mode") == plan["audio_mode"] and
+            type(report.get("disable_ntsc_warning", False)) is bool and
+            report.get("disable_ntsc_warning", False) ==
+            plan.get("disable_ntsc_warning", False) and
+            type(plan.get("volume_percent")) is int and
+            report.get("volume_percent") == plan["volume_percent"] and
+            (plan["audio_mode"] != "custom" or
+             report.get("source_audio_sha256") == plan.get("audio_sha256")),
+            "saved feature plan and selected package differ")
+
+
+def build(official, run_dir, fl23, audio_mode, audio=None, volume_percent=100,
+          disable_ntsc_warning=False):
     official, run_dir = Path(official), Path(run_dir)
     require(not official.is_symlink() and not run_dir.is_symlink(),
             "official DAT or run directory is a link")
     official, run_dir = official.resolve(), run_dir.resolve()
-    ids = features(fl23, audio_mode)
+    ids = features(fl23, audio_mode, disable_ntsc_warning)
     require(official.is_file() and not official.is_symlink() and
             firmware.sha_file(official) == firmware.SOURCE_SHA and
             run_dir.is_dir() and not run_dir.is_symlink(),
             "official 2.01 or private run directory differs")
     manifest = run_dir / MANIFEST_NAME
-    if audio_mode == "none":
+    if audio_mode == "none" and not disable_ntsc_warning:
         require(audio is None and volume_percent == 100,
                 "FL2/FL3-only selection has sound options")
         output = firmware.build(official)
@@ -111,7 +147,8 @@ def build(official, run_dir, fl23, audio_mode, audio=None, volume_percent=100):
                 stream.write("\n")
     else:
         output, report = sound.build(official, fl23, audio_mode, audio,
-                                     volume_percent, run_dir / sound.OUTPUT_NAME)
+                                     volume_percent, run_dir / sound.OUTPUT_NAME,
+                                     disable_ntsc_warning)
         require(report["feature_ids"] == ids, "built sound features differ")
     verified, digest = selected(manifest, audio)
     require(verified == output and digest == report["output_sha256"],
@@ -124,17 +161,20 @@ def main():
     parser.add_argument("--official", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--fl23", action="store_true")
+    parser.add_argument("--disable-ntsc-warning", action="store_true")
     parser.add_argument("--audio-mode", choices=("none", "stock", "custom"),
                         required=True)
     parser.add_argument("--audio", type=Path)
     parser.add_argument("--volume", type=int, default=100)
     args = parser.parse_args()
     output, manifest = build(args.official, args.out_dir, args.fl23,
-                             args.audio_mode, args.audio, args.volume)
+                             args.audio_mode, args.audio, args.volume,
+                             args.disable_ntsc_warning)
     print(json.dumps({"event": "feature_package_200_built",
                       "output": str(output), "manifest": str(manifest),
                       "sha256": selected(manifest)[1],
-                      "feature_ids": features(args.fl23, args.audio_mode),
+                      "feature_ids": features(args.fl23, args.audio_mode,
+                                              args.disable_ntsc_warning),
                       "camera_access": False}, sort_keys=True))
 
 

@@ -12,6 +12,16 @@ import ui
 
 
 class InterfaceTests(unittest.TestCase):
+    def test_ntsc_skip_is_saved_with_feature_choice(self):
+        console = ui.Console("en")
+        with patch.object(ui, "key", side_effect=["1", "2"]), \
+                patch.object(console, "_prompt"), \
+                patch.object(console, "_clear_prompt"):
+            plan = console.features()
+        self.assertTrue(plan["disable_ntsc_warning"])
+        self.assertTrue(plan["fl23"])
+        self.assertEqual(plan["audio_mode"], "none")
+
     def test_background_step_does_not_ask_for_input(self):
         with tempfile.TemporaryDirectory() as folder:
             state_path = Path(folder) / "state.json"
@@ -63,13 +73,13 @@ class InterfaceTests(unittest.TestCase):
 
     def test_sound_only_and_custom_volume_choices(self):
         console = ui.Console("en")
-        with patch.object(ui, "key", side_effect=["2", "1"]), \
+        with patch.object(ui, "key", side_effect=["2", "1", "1"]), \
                 patch.object(console, "_prompt"), \
                 patch.object(console, "_clear_prompt"):
             stock = console.features()
         self.assertEqual(stock, {"fl23": False, "audio_mode": "stock",
                                  "audio_path": None, "volume_percent": 100})
-        with patch.object(ui, "key", side_effect=["3", "2"]), \
+        with patch.object(ui, "key", side_effect=["3", "2", "1"]), \
                 patch.object(console, "_prompt"), \
                 patch.object(console, "_clear_prompt"), \
                 patch.object(console, "_audio_path", return_value="shot.wav"), \

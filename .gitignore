@@ -10,3 +10,5 @@ BODYDATA_FL23_200_manifest.json
 *.log
 .fl23_*
 native/generated/
+
+.ntsc-private/

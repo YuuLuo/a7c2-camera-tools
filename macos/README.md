@@ -8,4 +8,6 @@ Open `run.command`, choose English or Chinese, then **Install or resume**. The l
 
 Choose FL2/FL3, electronic shutter sound only, or both. Sound can use the built-in sample with no file, or a user MP3/WAV up to 2 seconds at 1–100% custom level. The built-in sample keeps its original level. A sound-only installation restores p1 and checks the version after a cold boot without writing FL2/FL3 color properties.
 
+The feature screen also offers **Skip NTSC startup notice** (default: Keep). It can be combined with any selection above and is saved with the per-camera plan. It skips the two selected NTSC message paths without changing PAL/NTSC settings. Existing runs retain their saved selection. This DAT port passed offline verification, and one A7C II user reported the mod working after QA on 2026-11-08. Detailed hardware coverage and recovery remain unverified. See [NTSC patch details](../native/NTSC.md).
+
 The body starts at official 2.01. The temporary update gate makes the camera confirmation show **1.99 → 2.00**. Execute only when those numbers appear. Keep the `runs` directory and official DAT until the final check finishes.

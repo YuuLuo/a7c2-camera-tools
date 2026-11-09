@@ -14,6 +14,8 @@ Research and reproducible firmware tools for the Sony ILCE-7CM2. The installer b
 
 Sound can use the camera's original sample at its original level without an uploaded file. Custom sound accepts an MP3/WAV of up to 2 seconds and a **1–100%** level.
 
+The feature screen also offers **Skip NTSC startup notice** (default: Keep). It can be combined with any selection above and is saved with the per-camera plan. It skips the two selected NTSC message paths without changing PAL/NTSC settings. Existing runs retain their saved selection. This DAT port passed offline verification, and one A7C II user reported the mod working after QA on 2026-11-08. Detailed hardware coverage and recovery remain unverified. See [NTSC patch details](native/NTSC.md).
+
 ## How it works
 
 1. The camera connects in USB Mass Storage mode (`054C:0E8A`). The host authenticates and switches it to service mode (`054C:0336`), where Jiritsu file commands are available.

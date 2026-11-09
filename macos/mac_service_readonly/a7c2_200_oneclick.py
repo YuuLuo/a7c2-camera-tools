@@ -24,6 +24,7 @@ RUN_COUNT = 0
 sys.path.insert(0, str(ROOT))
 import build_p1_gate_200 as builder
 import mac_probe_fl23 as probe
+import feature_package_200 as feature_package
 import p1_gate_generic_200 as gate
 import run_backup_snapshot_ro as identity
 
@@ -374,8 +375,8 @@ def resume_run(args):
             "上次在写入阶段中断；为避免误判机身状态，停止自动重试并请检查上次输出")
     if "feature_plan" not in state:
         plan = SCREEN.features()
-        import feature_package_200 as feature_package
-        feature_package.features(plan["fl23"], plan["audio_mode"])
+        feature_package.features(plan["fl23"], plan["audio_mode"],
+                                 plan.get("disable_ntsc_warning", False))
         if plan["audio_mode"] == "custom":
             selected_audio = Path(plan["audio_path"]).expanduser().resolve()
             require(selected_audio.is_file() and not selected_audio.is_symlink() and
@@ -406,6 +407,8 @@ def resume_run(args):
                   plan["volume_percent"]]
     if plan["fl23"]:
         build_args.append("--fl23")
+    if plan.get("disable_ntsc_warning", False):
+        build_args.append("--disable-ntsc-warning")
     if audio is not None:
         build_args += ["--audio", audio]
     if state.get("official_path"):
@@ -428,6 +431,8 @@ def resume_run(args):
         confirm("RETRY CARD", "上次卡复制阶段中断。脚本会先检查已有文件，再决定是否重试复制。")
         run_file(ROOT / "mac_build_and_stage_200.py", *build_args)
         save_state(state_path, state, "card_staged")
+    if state["status"] in ("card_staged", "p1_installed"):
+        feature_package.check_plan(package_manifest, plan)
     if state["status"] == "card_staged":
         confirm("P1", "将只在这台相机的 p1 中暂时写入验签和降级门控；每阶段会校验与回读。")
         save_state(state_path, state, "p1_install_started")
@@ -482,6 +487,9 @@ def resume_run(args):
                        coldboot_probe_json=str(cold_probe))
         if state["status"] == "sound_cold_verified":
             confirm("SOUND OK", "确认 MENU 为 2.00 且电子快门拍摄声音正确。")
+            if plan.get("disable_ntsc_warning", False):
+                confirm("NTSC OK", "Check NTSC startup notice after cold boot.")
+                state["user_confirmed_ntsc_after_coldboot"] = True
             save_state(state_path, state, "complete",
                        sound_cold_verified=True,
                        user_confirmed_sound_after_coldboot=True)
@@ -589,6 +597,9 @@ def resume_run(args):
             confirm("SOUND OK", "Check sound and FL2/FL3 on camera.")
         else:
             confirm("FL2 FL3 OK", "请在机身菜单确认 2.00、FL2/FL3 可选，并各拍一张 JPEG 检查效果。")
+        if plan.get("disable_ntsc_warning", False):
+            confirm("NTSC OK", "Check NTSC startup notice after cold boot.")
+            state["user_confirmed_ntsc_after_coldboot"] = True
         save_state(state_path, state, "complete",
                    cp_cold_verified=True, user_confirmed_fl23_after_coldboot=True)
         SCREEN.note_pair(("完成：p1 已恢复，CP 和两份 BK4 在断电后均通过回读。",

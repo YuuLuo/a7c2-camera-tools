@@ -369,7 +369,8 @@ def main(action="run", language="zh", screen=None):
     require(service in ("USBSTOR", "WINUSB"), "相机当前驱动不受支持")
     if "feature_plan" not in state:
         plan = SCREEN.features()
-        feature_package.features(plan["fl23"], plan["audio_mode"])
+        feature_package.features(plan["fl23"], plan["audio_mode"],
+                                 plan.get("disable_ntsc_warning", False))
         if plan["audio_mode"] == "custom":
             selected_audio = Path(plan["audio_path"]).expanduser().resolve()
             require(selected_audio.is_file() and not selected_audio.is_symlink() and
@@ -384,7 +385,8 @@ def main(action="run", language="zh", screen=None):
         state["feature_plan"] = plan
         state_path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
     plan = state["feature_plan"]
-    feature_package.features(plan["fl23"], plan["audio_mode"])
+    feature_package.features(plan["fl23"], plan["audio_mode"],
+                                 plan.get("disable_ntsc_warning", False))
     SCREEN.selected_features(plan)
     audio = Path(plan["audio_path"]) if plan["audio_mode"] == "custom" else None
     if audio is not None:
@@ -398,11 +400,14 @@ def main(action="run", language="zh", screen=None):
                   plan["volume_percent"])
     if plan["fl23"]:
         build_args += ("--fl23",)
+    if plan.get("disable_ntsc_warning", False):
+        build_args += ("--disable-ntsc-warning",)
     if audio is not None:
         build_args += ("--audio", audio)
     step(state_path, state, "build",
          lambda: run("release/feature_package_200.py", *build_args),
          package_manifest)
+    feature_package.check_plan(package_manifest, plan)
     if state.get("p1_build") != "done":
         if state.get("version_201") != "done":
             prepare_service_driver()
@@ -495,6 +500,9 @@ def main(action="run", language="zh", screen=None):
             state_path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
         SCREEN.progress("storage", state)
         ensure_storage(serial)
+        if plan.get("disable_ntsc_warning", False):
+            confirm("NTSC OK", "Check NTSC startup notice after cold boot.")
+            state["user_confirmed_ntsc_after_coldboot"] = True
         state["complete"] = True
         state_path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
         SCREEN.finished(version_cold, sound=True, fl23=False)
@@ -552,6 +560,9 @@ def main(action="run", language="zh", screen=None):
         state_path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
     SCREEN.progress("storage", state)
     ensure_storage(serial)
+    if plan.get("disable_ntsc_warning", False):
+        confirm("NTSC OK", "Check NTSC startup notice after cold boot.")
+        state["user_confirmed_ntsc_after_coldboot"] = True
     state["complete"] = True
     state_path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
     SCREEN.finished(cold_receipt, plan["audio_mode"] != "none", fl23=True)
