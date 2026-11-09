@@ -15,6 +15,8 @@ import zlib
 
 import numpy as np
 
+import ntsc_package_200 as ntsc
+
 ROOT = Path(__file__).resolve().parent
 if (ROOT / "fl23_windows.py").is_file():
     import fl23_windows as firmware
@@ -339,18 +341,21 @@ def version_only(plain):
 
 
 def build(official, fl23, audio_mode, audio_source=None, volume_percent=100,
-          output=None):
+          output=None, disable_ntsc_warning=False):
     official = Path(official)
     require(not official.is_symlink(), "official package is a link")
     official = official.resolve()
     require(official.is_file() and firmware.sha_file(official) == firmware.SOURCE_SHA,
             "unmodified official 2.01 package required")
-    require(type(fl23) is bool and audio_mode in ("stock", "custom"),
+    require(type(fl23) is bool and audio_mode in ("none", "stock", "custom") and
+            type(disable_ntsc_warning) is bool and
+            (audio_mode != "none" or disable_ntsc_warning) and
+            (fl23 or audio_mode != "none"),
             "sound feature selection differs")
     require(type(volume_percent) is int and 1 <= volume_percent <= 100 and
             (audio_mode == "custom" or volume_percent == 100),
             "sound volume selection differs")
-    require((audio_source is None) == (audio_mode == "stock"),
+    require((audio_source is None) == (audio_mode != "custom"),
             "custom mode requires one audio file; stock mode uses camera sound")
     if audio_source is not None:
         audio_source = Path(audio_source)
@@ -373,9 +378,12 @@ def build(official, fl23, audio_mode, audio_source=None, volume_percent=100,
             "verified feature base package required")
     encoded, audio_proof = (encode_audio(audio_source, data["audio"], volume_percent)
                             if audio_mode == "custom" else (None, None))
-    feature_ids = (["fl2_fl3"] if fl23 else []) + ["electronic_shutter_sound"]
+    feature_ids = (["fl2_fl3"] if fl23 else []) + (
+        ["electronic_shutter_sound"] if audio_mode != "none" else [])
     if audio_mode == "custom":
         feature_ids.append("custom_audio")
+    if disable_ntsc_warning:
+        feature_ids.append("no_ntsc_notice_v2")
     if output.exists() or manifest.exists():
         require(output.is_file() and manifest.is_file(),
                 "incomplete existing sound package build")
@@ -383,6 +391,9 @@ def build(official, fl23, audio_mode, audio_source=None, volume_percent=100,
         require(report.get("format") == 2 and
                 report.get("feature_ids") == feature_ids and
                 report.get("audio_mode") == audio_mode and
+                report.get("disable_ntsc_warning", False) == disable_ntsc_warning and
+                report.get("ntsc_patch_spec_sha256") ==
+                (ntsc.SPEC_SHA if disable_ntsc_warning else None) and
                 report.get("volume_percent") == volume_percent and
                 report.get("source_official_sha256") == firmware.SOURCE_SHA and
                 report.get("base_package_sha256") == base_sha and
@@ -412,7 +423,16 @@ def build(official, fl23, audio_mode, audio_source=None, volume_percent=100,
                 "feature base plaintext differs")
         if not fl23:
             version_only(plain)
-        changes = patch_plain(plain, data, encoded, fl23)
+        changes = (patch_plain(plain, data, encoded, fl23)
+                   if audio_mode != "none" else {})
+        if disable_ntsc_warning:
+            changes["ntsc"] = ntsc.patch_plain(plain, firmware)
+            # The top-level CRC describes the final package, including NTSC.
+            # Keep the intermediate sound-to-NTSC transition in the NTSC proof.
+            final_crc = changes["ntsc"]["partition_crc32"]
+            crcs = changes.setdefault("partition_crc32", {})
+            prior = crcs.get("dev/nflasha15,", final_crc)
+            crcs["dev/nflasha15,"] = {"old": prior["old"], "new": final_crc["new"]}
         target_plain_sha = firmware.sha_file(plain)
         dend_crc = firmware.encrypt_from(plain, base, temporary, layout)
         verify_roundtrip(temporary, plain, layout)
@@ -421,6 +441,8 @@ def build(official, fl23, audio_mode, audio_source=None, volume_percent=100,
                 "sound DAT length differs")
         report = {"format": 2, "feature_ids": feature_ids,
                   "audio_mode": audio_mode, "volume_percent": volume_percent,
+                  "disable_ntsc_warning": disable_ntsc_warning,
+                  "ntsc_patch_spec_sha256": ntsc.SPEC_SHA if disable_ntsc_warning else None,
                   "output_path": str(output),
                   "source_official_sha256": firmware.SOURCE_SHA,
                   "base_package_sha256": base_sha,
@@ -432,7 +454,7 @@ def build(official, fl23, audio_mode, audio_source=None, volume_percent=100,
                   "resource_duration_seconds": (audio_proof or {}).get("resource_duration_seconds"),
                   "audio_frame_count": (audio_proof or {}).get("frame_count"),
                   "tail_padding_samples": (audio_proof or {}).get("tail_padding_samples"),
-                  "registration_length_bytes": changes["cp"]["registered_audio_bytes"],
+                  "registration_length_bytes": changes.get("cp", {}).get("registered_audio_bytes"),
                   "output_sha256": output_sha,
                   "output_plain_sha256": target_plain_sha,
                   "output_size": PACKAGE_SIZE, "package_version": "2.00",

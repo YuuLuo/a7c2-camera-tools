@@ -1,0 +1,170 @@
+{
+  "status": "OFFLINE_PASSED_USER_REPORTED_HARDWARE_SUCCESS",
+  "camera_access": false,
+  "scope": "Exact supported official 2.01 to FL2/FL3 + stock/custom sound + NTSC skip",
+  "hardware_feedback": {
+    "date": "2026-11-08",
+    "source": "User report after camera QA",
+    "model": "ILCE-7CM2",
+    "reported_result": "Mod working",
+    "discussed_setup": "Unmodified official 2.01; FL2/FL3 + built-in shutter sound + NTSC skip; no custom audio replacement",
+    "limits": [
+      "No flashed-package hash, independent device readback, or itemized feature and cold-start results supplied.",
+      "Does not establish custom audio, full video coverage, recovery, or long-term stability."
+    ]
+  },
+  "source_official_sha256": "eb4943e6099754d64deaef5047942e9bfe258f232d0b7bc39fa23b3cd10e1e31",
+  "packages": {
+    "stock": {
+      "camera_access": false,
+      "baseline_sha256": "9a934c8c8130c731c94542933e62d95f3c98c7aba4340391855843c31caa2f64",
+      "candidate_sha256": "24c43b0b50f9a3c238184d6a97b8cdc84c42a8cac07d17eef9ee7ed6240c7cc3",
+      "partitions": {
+        "dev/nflasha15,": [
+          "2b934435",
+          "fb13b104"
+        ],
+        "dev/nflasha5,": [
+          "f96946ab",
+          "f96946ab"
+        ],
+        "dev/nflasha8,": [
+          "55944957",
+          "55944957"
+        ]
+      },
+      "app_sha256": "c284064658b4a8ad6f17a0643607767f70056deeb7e3014799f2591900b581a6",
+      "baseline_app_sha256": "c9238c0c9ad395b828c7ca5f7cc0681dd3a51af3a341c0d0f427ea1b88e6f90c",
+      "boot_window_sha256": "8c6f78c988870cf22c7d8e05813d21754c1af9d3cf5f327cac6ff555bb09c141",
+      "allowed_changes_only": true,
+      "ext2_mapping_verified": true,
+      "plaintext_sha256": "319b12c4c18feba5e394f503a0a0b57ef6798defcfe8d28254f251680c6e05bb"
+    },
+    "custom": {
+      "camera_access": false,
+      "baseline_sha256": "5093d5d5541d6c87abdbc167ec4a3cb8f26279712a2b268c9041083fd1ed18cd",
+      "candidate_sha256": "5a11947cd232e1c3bdcf10adf5ee646bb7d9b578e4ae9d6dcdb6509690bfccb4",
+      "partitions": {
+        "dev/nflasha15,": [
+          "ddcc5f7a",
+          "0d4caa4b"
+        ],
+        "dev/nflasha5,": [
+          "c316fa58",
+          "c316fa58"
+        ],
+        "dev/nflasha8,": [
+          "416237a9",
+          "416237a9"
+        ]
+      },
+      "app_sha256": "03f198b8e87048826ab251c74af001805a311d41fd0003f4e987dad52078e580",
+      "baseline_app_sha256": "a4ab52b116f0ec81523abef96302dd349c34a5ccd4f003b725140ed461cf179e",
+      "boot_window_sha256": "8c6f78c988870cf22c7d8e05813d21754c1af9d3cf5f327cac6ff555bb09c141",
+      "allowed_changes_only": true,
+      "ext2_mapping_verified": true,
+      "plaintext_sha256": "aa17b265993185aca10e829343ae584766d349482b39fcb6b90131d30257d9f1"
+    }
+  },
+  "native_boot": {
+    "camera_access": false,
+    "by_mode": {
+      "0": {
+        "other_message_trace_registers_identical": 12000,
+        "cases": 12288,
+        "ntsc_removed": 288
+      },
+      "1": {
+        "other_message_trace_registers_identical": 12000,
+        "cases": 12288,
+        "ntsc_removed": 288
+      }
+    },
+    "source_sha256": "2ea02f7ecbc5bb917316fe8ef4ce5ffd87eb66efaae78ba2ce11420552df539b",
+    "candidate_sha256": "03f198b8e87048826ab251c74af001805a311d41fd0003f4e987dad52078e580",
+    "script_sha256": "11cd7ee4e9659c58be404d9d6825fd542599a1ccd820bcd5dad3c76197377573",
+    "limits": [
+      "External calls use explicit fixtures.",
+      "No full boot, rendering, video, or hardware reachability test."
+    ]
+  },
+  "wbi_scan": {
+    "wbi_sha256": "db3730c8dbb2de71cfb7a66c343ba8e752e0f374a3a4104196ceac1e9d1b08dc",
+    "ntsc_context_matches": {
+      "0x2061880": {
+        "16": [],
+        "32": [],
+        "128": []
+      },
+      "0x2061da8": {
+        "16": [],
+        "32": [],
+        "128": []
+      }
+    },
+    "sound_positive_controls": {
+      "only_shutter_menu_a": {
+        "match_count": 44481,
+        "known_location_verified": true,
+        "unique_location": null
+      },
+      "only_shutter_menu_b": {
+        "match_count": 4103,
+        "known_location_verified": true,
+        "unique_location": null
+      },
+      "other_sounds_menu_a": {
+        "match_count": 44481,
+        "known_location_verified": true,
+        "unique_location": null
+      },
+      "other_sounds_menu_b": {
+        "match_count": 60183,
+        "known_location_verified": true,
+        "unique_location": null
+      },
+      "registration_hook": {
+        "match_count": 1,
+        "known_location_verified": true,
+        "unique_location": "0x79e370c"
+      },
+      "registration_cave": {
+        "match_count": 1,
+        "known_location_verified": true,
+        "unique_location": "0x82dbb78"
+      }
+    },
+    "elf_load_segments": [
+      {
+        "offset": "0x0",
+        "va": "0x0",
+        "file_size": 85617919,
+        "flags": 5
+      },
+      {
+        "offset": "0x51a7718",
+        "va": "0x51b7718",
+        "file_size": 14338208,
+        "flags": 6
+      }
+    ],
+    "limits": [
+      "Exact uncompressed byte searches only; no full WBI loader or camera startup execution."
+    ]
+  },
+  "tests": {
+    "windows_offline_on_macos_msvcrt_stub": 25,
+    "macos_offline": 4
+  },
+  "fixes": [
+    "Top-level AP CRC now records the final NTSC-patched value.",
+    "Resumed package selection must match the saved feature plan before update writes."
+  ],
+  "custom_audio": "Synthetic 0.1-second 24 kHz WAV at 50%; not user audio.",
+  "limits": [
+    "Automated validation did not access a camera; user-reported hardware success is recorded separately.",
+    "Detailed hardware coverage and recovery remain unverified.",
+    "No native Windows USB or keyboard test.",
+    "WBI search covers exact uncompressed contexts, not all loader behavior."
+  ]
+}

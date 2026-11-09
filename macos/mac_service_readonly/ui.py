@@ -49,6 +49,9 @@ ACTIONS = {
 }
 
 MANUAL = {
+    "NTSC OK": (
+        "请确认冷启动后原先出现的 NTSC 开机提示已跳过，拍摄和回放正常。",
+        "After cold boot, confirm the previous NTSC startup notice is skipped and capture/playback work."),
     "SOUND OK": (
         "断开 USB，确认 MENU 版本 2.00；若启用了 FL2/FL3 也确认可选。拍摄并试听电子快门音效，重新连接 USB 后按 Enter。",
         "Disconnect USB and confirm version 2.00. If FL2/FL3 was selected, check those modes too. Take a photo, check the shutter sound, reconnect USB and press Enter."),
@@ -168,6 +171,7 @@ class Console:
                 self._clear_prompt()
                 plan = {"fl23": True, "audio_mode": "none",
                         "audio_path": None, "volume_percent": 100}
+                self._ntsc_choice(plan)
                 self.selected_features(plan)
                 return plan
             if choice not in ("2", "3"):
@@ -191,8 +195,21 @@ class Console:
             else:
                 continue
             self._clear_prompt()
+            self._ntsc_choice(plan)
             self.selected_features(plan)
             return plan
+
+    def _ntsc_choice(self, plan):
+        self._prompt(self.text((
+            "NTSC 开机提示：\n[1] 保留（默认）  [2] 跳过提示",
+            "NTSC startup notice:\n[1] Keep (default)  [2] Skip notice")))
+        while True:
+            pressed = key()
+            if pressed in ("1", "\r", "2"):
+                if pressed == "2":
+                    plan["disable_ntsc_warning"] = True
+                self._clear_prompt()
+                return
 
     def _volume_percent(self):
         chars = []
@@ -234,6 +251,8 @@ class Console:
             label += " + sound"
         if plan["audio_mode"] == "custom":
             label += f" {plan['volume_percent']}%"
+        if plan.get("disable_ntsc_warning", False):
+            label += " + skip NTSC notice"
         if self.panel and self.panel.active:
             self.panel.set_features(label)
 

@@ -1,0 +1,24 @@
+{
+  "format": 1,
+  "feature": "no_ntsc_notice_v2",
+  "source_package_sha256": "eb4943e6099754d64deaef5047942e9bfe258f232d0b7bc39fa23b3cd10e1e31",
+  "app_source_sha256": "2ea02f7ecbc5bb917316fe8ef4ce5ffd87eb66efaae78ba2ce11420552df539b",
+  "spans": [
+    {
+      "offset": 33953920,
+      "partition_relative_offset": 663336064,
+      "new": "07000014",
+      "old_sha256": "eba29c372bddf35f3e178906a29c8453cac834f6cb893c26d2efac6f9e4403eb",
+      "source_context_size": 132,
+      "source_context_sha256": "9e7ef7a34abf31d94d2b33fbb1d977bf81e539f539ade98964e1f730a4629933"
+    },
+    {
+      "offset": 33955240,
+      "partition_relative_offset": 663337384,
+      "new": "0a000014",
+      "old_sha256": "eba29c372bddf35f3e178906a29c8453cac834f6cb893c26d2efac6f9e4403eb",
+      "source_context_size": 132,
+      "source_context_sha256": "397ab39f9adf49dbe898ca848fccfbb9ca68438da450c5575ff1a7df16d8ab70"
+    }
+  ]
+}

@@ -134,6 +134,7 @@ def main():
     parser.add_argument("--official", type=Path)
     parser.add_argument("--probe-json", type=Path, required=True)
     parser.add_argument("--fl23", action="store_true")
+    parser.add_argument("--disable-ntsc-warning", action="store_true")
     parser.add_argument("--audio-mode", choices=("none", "stock", "custom"),
                         required=True)
     parser.add_argument("--audio", type=Path)
@@ -142,7 +143,7 @@ def main():
     parser.add_argument("--execute", action="store_true")
     args = parser.parse_args()
     require(sys.platform == "darwin", "macOS required")
-    feature_package.features(args.fl23, args.audio_mode)
+    feature_package.features(args.fl23, args.audio_mode, args.disable_ntsc_warning)
     require((args.audio is None) == (args.audio_mode != "custom"),
             "custom audio selection differs")
     source = official_source(args.official)
@@ -153,7 +154,7 @@ def main():
     if not args.execute:
         print(json.dumps({"camera_access": False, "official_sha256": package.SOURCE_SHA,
                           "feature_ids": feature_package.features(
-                              args.fl23, args.audio_mode),
+                              args.fl23, args.audio_mode, args.disable_ntsc_warning),
                           "camera_serial": camera["serial_num"],
                           "card_uuid": card[1]["VolumeUUID"]}))
         return 0
@@ -162,7 +163,7 @@ def main():
             "too little free disk space for complete DAT build and verification")
     output, manifest = feature_package.build(
         source, args.out_dir, args.fl23, args.audio_mode, args.audio,
-        args.volume)
+        args.volume, args.disable_ntsc_warning)
     output, selected_sha = feature_package.selected(manifest, args.audio)
     mountpoint, _ = current_card(camera, card, pmhome)
     require(shutil.disk_usage(mountpoint).free > PACKAGE_SIZE + 100_000_000,

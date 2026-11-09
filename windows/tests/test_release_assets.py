@@ -45,7 +45,8 @@ class ReleaseAssetTests(unittest.TestCase):
 
     def test_sound_builders_match_between_platforms(self):
         for name in ("sound_package_200.py", "feature_package_200.py",
-                     "sound_patch_200.json"):
+                     "sound_patch_200.json", "ntsc_package_200.py",
+                     "ntsc_patch_200.json"):
             self.assertEqual(
                 (ROOT / "windows/runtime/release" / name).read_bytes(),
                 (ROOT / "macos/mac_service_readonly" / name).read_bytes())
